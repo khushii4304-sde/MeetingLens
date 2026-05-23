@@ -18,3 +18,12 @@ __pycache__/
 
 # Ignore virtual environment
 venv/
+
+# Ignore processed datasets
+data/processed/*.csv
+
+# Keep small important CSVs if needed
+!data/processed/results/
+
+# Ignore large research artifacts
+data/icsi_raw/
