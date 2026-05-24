@@ -1,0 +1,12 @@
+{
+  "tfidf_lr": {
+    "ami_macro_f1": 0.9535,
+    "ood_macro_f1": 0.4241,
+    "ood_drop": 0.5294
+  },
+  "bert_base": {
+    "ami_macro_f1": 0.9947,
+    "ood_macro_f1": 0.4474,
+    "ood_drop": 0.5473
+  }
+}
