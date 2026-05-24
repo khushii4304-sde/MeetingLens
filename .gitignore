@@ -29,8 +29,9 @@ data/processed/*.csv
 data/icsi_raw/
 
 # Large processed data files
-data/processed/meetingbank_labeled.csv
-data/processed/icsi_labeled.csv
-data/processed/train_merged.csv
-data/processed/icsi_train.csv
-data/processed/icsi_test.csv
+# Step 3 - add the large files to gitignore
+echo "data/processed/meetingbank_labeled.csv" >> .gitignore
+echo "data/processed/icsi_labeled.csv" >> .gitignore
+echo "data/processed/train_merged.csv" >> .gitignore
+echo "data/processed/icsi_train.csv" >> .gitignore
+echo "data/processed/icsi_test.csv" >> .gitignore
