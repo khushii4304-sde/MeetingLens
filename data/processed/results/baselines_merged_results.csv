@@ -1,0 +1,3 @@
+Model,Train Data,AMI F1 (%),OOD F1 (%),Gap (%)
+TF-IDF + LR,AMI+OOD merged,81.5,74.9,6.6
+BERT-base-uncased,AMI+OOD merged,98.0,86.8,11.3

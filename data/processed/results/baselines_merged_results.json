@@ -1,0 +1,53 @@
+{
+  "tfidf_lr_merged": {
+    "model": "TF-IDF + LR",
+    "train_data": "AMI+OOD merged",
+    "ami_test": {
+      "macro_f1": 0.8147,
+      "macro_pre": 0.7942,
+      "macro_rec": 0.8498,
+      "binary_f1": 0.7252
+    },
+    "ood_test": {
+      "macro_f1": 0.7485,
+      "macro_pre": 0.6916,
+      "macro_rec": 0.8791,
+      "binary_f1": 0.5283
+    },
+    "gap": 0.0662
+  },
+  "bert_merged": {
+    "model": "BERT-base-uncased",
+    "train_data": "AMI+OOD merged",
+    "best_val_macro_f1": 0.9779,
+    "ami_test": {
+      "macro_f1": 0.9804,
+      "macro_pre": 0.983,
+      "macro_rec": 0.978,
+      "binary_f1": 0.9696
+    },
+    "ood_test": {
+      "macro_f1": 0.8675,
+      "macro_pre": 0.893,
+      "macro_rec": 0.8454,
+      "binary_f1": 0.7451
+    },
+    "training_history": [
+      {
+        "epoch": 1,
+        "train_loss": 0.3581,
+        "val_macro_f1": 0.9641
+      },
+      {
+        "epoch": 2,
+        "train_loss": 0.208,
+        "val_macro_f1": 0.9779
+      },
+      {
+        "epoch": 3,
+        "train_loss": 0.1433,
+        "val_macro_f1": 0.9758
+      }
+    ]
+  }
+}
