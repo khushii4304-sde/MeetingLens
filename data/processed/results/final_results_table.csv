@@ -1,0 +1,7 @@
+Model,Type,Train Data,AMI F1 (%),OOD F1 (%),Gap (%)
+TF-IDF + LR,Classical Baseline,AMI only,95.3,42.4,52.9
+TF-IDF + LR,Classical Baseline,AMI + OOD,81.5,74.9,6.6
+BERT-base-uncased,Transformer Baseline,AMI only,99.5,44.7,54.7
+BERT-base-uncased,Transformer Baseline,AMI + OOD,98.0,86.8,11.3
+RoBERTa-base ★,Proposed Model,AMI + OOD,96.7,86.5,10.1
+DistilBERT-base,Efficient Variant,AMI + OOD,98.1,86.6,11.5
