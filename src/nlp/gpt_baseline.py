@@ -1,13 +1,12 @@
 # src/nlp/gpt_baseline.py
-# Zero-shot GPT-style baseline using Flan-T5
 
 import sys
 import os
-
-try:
-    sys.stdout.reconfigure(encoding='utf-8')
-except AttributeError:
-    pass
+import io
+import json
+import warnings
+warnings.filterwarnings('ignore')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 import torch
 import pandas as pd
@@ -18,104 +17,90 @@ print("=" * 60, flush=True)
 print("Flan-T5 Zero-Shot Baseline", flush=True)
 print("=" * 60, flush=True)
 
-# ── 1. Device detection ──────────────────────────────────────
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-    print(f"✓ GPU detected: {torch.cuda.get_device_name(0)}", flush=True)
-else:
-    device = torch.device("cpu")
-    print("⚠ No GPU found — running on CPU (will be slower)", flush=True)
+# ── 1. Load data FIRST using chunked read ────────────────────
+print("Loading data...", flush=True)
+chunks = []
+for chunk in pd.read_csv(
+    "data/processed/test_labeled.csv",
+    chunksize=1000,
+    encoding='utf-8',
+    encoding_errors='replace'
+):
+    chunks.append(chunk)
+df = pd.concat(chunks).dropna(subset=["text"])
+print(f"Rows loaded: {len(df)}", flush=True)
+print(f"Label distribution: {df['action_item'].value_counts().to_dict()}", flush=True)
 
-# ── 2. Load model ────────────────────────────────────────────
+N = 200
+sample = df.sample(N, random_state=42).reset_index(drop=True)
+texts  = sample["text"].tolist()
+labels = sample["action_item"].tolist()
+print(f"Sampled {N} examples. Positives: {sum(labels)}", flush=True)
+
+# ── 2. Load model AFTER data ──────────────────────────────────
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"\nDevice: {device}", flush=True)
+
 MODEL_NAME = "google/flan-t5-base"
-print(f"\nLoading {MODEL_NAME} ...", flush=True)
-try:
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME).to(device)
-    model.eval()
-    print("✓ Model loaded successfully", flush=True)
-except Exception as e:
-    print(f"✗ Failed to load model: {e}", flush=True)
-    sys.exit(1)
+print(f"Loading {MODEL_NAME}...", flush=True)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME).to(device)
+model.eval()
+torch.cuda.empty_cache()
+print("Model loaded.", flush=True)
 
-# ── 3. Smoke test ────────────────────────────────────────────
-print("\nRunning smoke test (1 sample)...", flush=True)
-try:
-    _in = tokenizer("Answer yes or no: is 2+2=4?", return_tensors="pt").to(device)
-    _out = model.generate(**_in, max_new_tokens=3)
-    _dec = tokenizer.decode(_out[0], skip_special_tokens=True)
-    print(f"✓ Smoke test passed — model output: '{_dec}'", flush=True)
-except Exception as e:
-    print(f"✗ Smoke test failed: {e}, falling back to CPU", flush=True)
-    device = torch.device("cpu")
-    model = model.to(device)
-
-# ── 4. Load data ─────────────────────────────────────────────
-DATA_PATH = "data/processed/test_labeled.csv"
-if not os.path.exists(DATA_PATH):
-    for p in ["test_labeled.csv", "data/test_labeled.csv", "processed/test_labeled.csv"]:
-        if os.path.exists(p):
-            DATA_PATH = p
-            break
-    else:
-        print("✗ Could not find data file.", flush=True)
-        sys.exit(1)
-
-print(f"\nLoading data from: {DATA_PATH}", flush=True)
-df = pd.read_csv(DATA_PATH)   # default c-engine, fastest
-print(f"  → raw shape: {df.shape}", flush=True)
-df = df.dropna(subset=["text", "action_item"])
-df["action_item"] = df["action_item"].astype(int)
-print(f"✓ Loaded {len(df)} rows | labels: {df['action_item'].value_counts().to_dict()}", flush=True)
-
-# ── 5. Sample ────────────────────────────────────────────────
-N = min(200, len(df))
-BATCH_SIZE = 8
-
-sample = df.sample(N, random_state=42)
-print(f"✓ Sampled {N} | labels: {sample['action_item'].value_counts().to_dict()}", flush=True)
-
-# ── 6. Batched prediction ────────────────────────────────────
-def make_prompt(text: str) -> str:
-    return (
-        "Is the following meeting utterance an action item "
-        "(a task assigned to someone)? Answer yes or no only.\n"
-        f"Utterance: {text}\nAnswer:"
-    )
-
+# ── 3. Predict ────────────────────────────────────────────────
 @torch.no_grad()
-def predict_batch(texts: list) -> list:
-    prompts = [make_prompt(t) for t in texts]
+def predict(text):
+    prompt = (
+        "Task: Classify whether this meeting utterance is an action item.\n"
+        "An action item is a specific task assigned to someone to complete.\n"
+        f"Utterance: {text}\n"
+        "Is this an action item? Answer with yes or no."
+    )
     inputs = tokenizer(
-        prompts, return_tensors="pt", truncation=True,
-        max_length=128, padding=True,
+        prompt, return_tensors="pt",
+        truncation=True, max_length=256
     ).to(device)
     outputs = model.generate(**inputs, max_new_tokens=3)
-    decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-    return [1 if "yes" in r.lower() else 0 for r in decoded]
+    answer = tokenizer.decode(outputs[0], skip_special_tokens=True).strip().lower()
+    return 1 if answer.startswith("yes") else 0
 
-# ── 7. Run predictions ───────────────────────────────────────
-texts = list(sample["text"])
+print("\nRunning predictions...", flush=True)
 preds = []
-total_batches = (len(texts) + BATCH_SIZE - 1) // BATCH_SIZE
+for i, text in enumerate(texts):
+    preds.append(predict(text))
+    if (i + 1) % 50 == 0:
+        print(f"  {i+1}/{N} done...", flush=True)
 
-print(f"\nRunning predictions: {N} samples, batch_size={BATCH_SIZE}, {total_batches} batches ...", flush=True)
+print(f"\nPrediction distribution: {preds.count(0)} zeros, {preds.count(1)} ones", flush=True)
 
-for batch_num, i in enumerate(range(0, len(texts), BATCH_SIZE), 1):
-    batch = texts[i : i + BATCH_SIZE]
-    preds.extend(predict_batch(batch))
-    done = min(i + BATCH_SIZE, len(texts))
-    print(f"  ✓ batch {batch_num}/{total_batches} — {done}/{N} samples", flush=True)
-
-labels = sample["action_item"].tolist()
-
-# ── 8. Results ───────────────────────────────────────────────
+# ── 4. Results ────────────────────────────────────────────────
 print("\n" + "=" * 60, flush=True)
-macro_f1 = f1_score(labels, preds, average="macro", zero_division=0)
-print(f"Flan-T5 zero-shot macro-F1: {macro_f1 * 100:.1f}%", flush=True)
+print("FLAN-T5 ZERO-SHOT RESULTS", flush=True)
 print("=" * 60, flush=True)
+
+macro_f1 = f1_score(labels, preds, average="macro", zero_division=0)
+print(f"Macro-F1 : {macro_f1 * 100:.1f}%", flush=True)
+print(f"Samples  : {N}", flush=True)
+print("\nClassification report:", flush=True)
 print(classification_report(
     labels, preds,
-    target_names=["Not action", "Action item"],
-    zero_division=0,
+    target_names=["Not action item", "Action item"],
+    zero_division=0
 ), flush=True)
+
+# ── 5. Save ───────────────────────────────────────────────────
+os.makedirs("data/processed/results", exist_ok=True)
+result = {
+    "model":      "Flan-T5-base (zero-shot)",
+    "samples":    N,
+    "macro_f1":   round(macro_f1, 4),
+    "pred_ones":  preds.count(1),
+    "pred_zeros": preds.count(0),
+}
+with open("data/processed/results/flant5_results.json", "w") as f:
+    json.dump(result, f, indent=2)
+
+print(f"\nSaved: data/processed/results/flant5_results.json", flush=True)
+print("=" * 60, flush=True)

@@ -1,0 +1,18 @@
+{
+  "decision_detection": {
+    "total_utterances": 45769,
+    "decisions_detected": 112,
+    "decision_rate_%": 0.24,
+    "co_occurrence_with_actions": 44
+  },
+  "sentiment_analysis": {
+    "positive_%": 8.85,
+    "neutral_%": 66.78,
+    "negative_%": 24.37,
+    "action_item_rate_by_sentiment": {
+      "negative": 25.43,
+      "neutral": 20.83,
+      "positive": 23.15
+    }
+  }
+}
