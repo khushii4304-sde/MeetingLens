@@ -1,15 +1,23 @@
 {
   "ablation_1_data_composition": {
+    "tfidf_ami_only_ami_f1": 95.3,
+    "tfidf_ami_only_ood_f1": 42.4,
     "tfidf_ami_only_gap": 52.9,
+    "tfidf_merged_ami_f1": 81.5,
+    "tfidf_merged_ood_f1": 74.9,
     "tfidf_merged_gap": 6.6,
     "tfidf_gap_reduction": 46.3,
+    "bert_ami_only_ami_f1": 99.5,
+    "bert_ami_only_ood_f1": 44.7,
     "bert_ami_only_gap": 54.7,
+    "bert_merged_ami_f1": 98.0,
+    "bert_merged_ood_f1": 86.8,
     "bert_merged_gap": 11.3,
     "bert_gap_reduction": 43.4
   },
   "ablation_2_architecture": {
-    "tfidf_ood_f1": 74.9,
-    "bert_ood_f1": 86.8,
+    "tfidf_merged_ood_f1": 74.9,
+    "bert_merged_ood_f1": 86.8,
     "distilbert_ood_f1": 86.6,
     "roberta_ood_f1": 86.5,
     "finding": "Architecture effect secondary to data composition"
@@ -18,7 +26,7 @@
     "without_hn_tfidf_ami": 95.8,
     "with_hn_tfidf_ami": 95.3,
     "change": -0.5,
-    "finding": "Negligible effect at <2% of training data scale"
+    "finding": "Negligible effect at less than 2 percent of training data"
   },
   "ablation_4_efficiency": {
     "roberta_params_M": 125,
@@ -26,6 +34,8 @@
     "roberta_ood_f1": 86.5,
     "distilbert_ood_f1": 86.6,
     "ood_difference": 0.1,
+    "roberta_gap": 10.1,
+    "distilbert_gap": 11.5,
     "finding": "DistilBERT recommended for deployment"
   }
 }

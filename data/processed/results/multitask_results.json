@@ -1,18 +1,19 @@
 {
   "decision_detection": {
     "total_utterances": 45769,
-    "decisions_detected": 112,
-    "decision_rate_%": 0.24,
-    "co_occurrence_with_actions": 44
+    "decisions_detected": 104,
+    "decision_rate_%": 0.23,
+    "co_occurrence_with_actions": 40
   },
   "sentiment_analysis": {
-    "positive_%": 8.85,
-    "neutral_%": 66.78,
-    "negative_%": 24.37,
+    "positive_%": 11.08,
+    "neutral_%": 86.17,
+    "negative_%": 2.74,
     "action_item_rate_by_sentiment": {
-      "negative": 25.43,
-      "neutral": 20.83,
-      "positive": 23.15
+      "negative": 27.65,
+      "neutral": 21.4,
+      "positive": 26.67
     }
-  }
+  },
+  "speaker_dominance": {}
 }
